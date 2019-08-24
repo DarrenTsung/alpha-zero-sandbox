@@ -25,10 +25,58 @@ pub struct TicTacToeState {
     current_player: Player,
 }
 
+impl TicTacToeState {
+    const WIN_INDICES: [[usize; 3]; 8] = [
+        // Rows
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        // Columns
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        // Diagonals
+        [0, 4, 8],
+        [6, 4, 2],
+    ];
+
+    fn winner(&self) -> Option<Player> {
+        'indices: for indices in &Self::WIN_INDICES {
+            let mut winner_for_indices = None;
+            for &index in indices {
+                let slot = self.board[index];
+                if slot.is_none() {
+                    continue 'indices;
+                }
+
+                let player = slot.expect("is occupied");
+                if let Some(winner_player) = winner_for_indices {
+                    if winner_player != player {
+                        continue 'indices;
+                    }
+                }
+
+                winner_for_indices = Some(player);
+            }
+
+            if let Some(winner) = winner_for_indices {
+                return Some(winner);
+            }
+        }
+
+        None
+    }
+}
+
 impl GameTreeNode for TicTacToeState {
     type Node = TicTacToeState;
 
     fn children(&self) -> Vec<Self::Node> {
+        // No possible child states if there is a winner.
+        if self.winner().is_some() {
+            return vec![];
+        }
+
         let mut child_nodes = vec![];
 
         for (i, slot) in self.board.iter().enumerate() {
@@ -120,5 +168,23 @@ mod tests {
                 current_player: Player::O,
             }
         );
+    }
+
+    #[test]
+    fn no_children_from_finished_tictactoe_game() {
+        #[rustfmt::skip]
+        let initial_board = board(
+            " XX",
+            "OXO",
+            "X O"
+        );
+
+        let initial_state = TicTacToeState {
+            board: initial_board,
+            current_player: Player::O,
+        };
+
+        let children = initial_state.children();
+        assert_eq!(children.len(), 0, "expected no child states");
     }
 }
