@@ -1,6 +1,6 @@
 use crate::GameTreeNode;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Player {
     X = 0,
     O = 1,
@@ -15,7 +15,7 @@ impl Player {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct TicTacToeState {
     /// The state of a game of tic-tac-toe can be
     /// represented as an length-9 array of slot states (integers).
