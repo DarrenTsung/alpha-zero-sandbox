@@ -1,0 +1,7 @@
+[package]
+name = "game-tree"
+version = "0.1.0"
+authors = ["Darren Tsung <darren.tsung@gmail.com>"]
+edition = "2018"
+
+[dependencies]
