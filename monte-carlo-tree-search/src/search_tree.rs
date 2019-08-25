@@ -42,22 +42,25 @@ impl SearchTree {
         });
     }
 
-    pub fn number_of_fully_explored_nodes<N: GameTreeNode<Node = N> + 'static>(
+    pub fn number_of_fully_expanded_nodes<N: GameTreeNode<Node = N> + 'static>(
         &self,
         node: N,
     ) -> u64 {
         let mut count = 0;
         let mut queue = vec![node];
-        while queue.len() > 0 {
-            let n = queue.pop().expect("queue is not empty");
-            if let Some(meta) = self.node_metadata.lock().get(&hash(&n)) {
-                if !meta.is_fully_expanded() {
-                    continue;
-                }
+        while let Some(node) = queue.pop() {
+            let is_fully_expanded = self
+                .node_metadata
+                .lock()
+                .get(&hash(&node))
+                .map(|meta| meta.is_fully_expanded())
+                .unwrap_or(false);
+            if !is_fully_expanded {
+                continue;
             }
 
             count += 1;
-            if let NodeState::HasChildren(children) = n.calculate_state() {
+            if let NodeState::HasChildren(children) = node.calculate_state() {
                 queue.extend(children);
             }
         }

@@ -31,7 +31,7 @@ impl<N: GameTreeNode<Node = N> + 'static> fmt::Display for LearningSearchTreeStr
             f,
             "MCSearchTree(explore_f={}, fully={})",
             self.exploration_factor,
-            self.tree.number_of_fully_explored_nodes(self.root.clone())
+            self.tree.number_of_fully_expanded_nodes(self.root.clone())
         )
     }
 }
