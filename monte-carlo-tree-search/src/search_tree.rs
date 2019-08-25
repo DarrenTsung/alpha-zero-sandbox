@@ -67,17 +67,27 @@ impl SearchTree {
         count
     }
 
-    pub fn select_most_visited_child<N: GameTreeNode>(&self, children: Vec<N>) -> N {
+    pub fn select_most_visited_child<N: GameTreeNode>(&self, children: Vec<N>) -> (u32, N) {
         let node_metadata = self.node_metadata.lock();
         children
             .into_iter()
-            .max_by_key(|c| {
-                node_metadata
-                    .get(&hash(c))
-                    .map(|meta| meta.number_of_visits())
-                    .unwrap_or(0)
-            })
+            .map(|c| (Self::get_number_of_visits_helper(&node_metadata, &c), c))
+            .max_by_key(|(number_of_visits, _c)| *number_of_visits)
             .expect("array is not empty")
+    }
+
+    pub fn get_number_of_visits<N: GameTreeNode>(&self, node: &N) -> u32 {
+        Self::get_number_of_visits_helper(&self.node_metadata.lock(), node)
+    }
+
+    fn get_number_of_visits_helper<N: GameTreeNode>(
+        node_metadata: &antidote::MutexGuard<MetadataMap>,
+        node: &N,
+    ) -> u32 {
+        node_metadata
+            .get(&hash(node))
+            .map(|meta| meta.number_of_visits())
+            .unwrap_or(0)
     }
 }
 

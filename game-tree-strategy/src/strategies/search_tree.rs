@@ -48,6 +48,13 @@ impl<N: GameTreeNode<Node = N> + 'static> Strategy<N> for LearningSearchTreeStra
             },
         );
 
-        self.tree.select_most_visited_child(children)
+        let (_number_of_visits, child) = self.tree.select_most_visited_child(children);
+
+        // -- Debugging Block --
+        // println!("number of visits chosen: {}", number_of_visits);
+        // use std::io::{stdin, Read};
+        // stdin().read(&mut [0]).unwrap();
+
+        child
     }
 }
