@@ -128,6 +128,11 @@ impl SearchTask {
             struct Current<N> {
                 node: N,
                 metadata: Arc<NodeMetadata>,
+
+                /// The action arriving to this node was from
+                /// a node whose turn was 'self'.
+                parent_was_self: bool,
+                /// The node was reached through State::InSimulation
                 chosen_from_simulation: bool,
             }
 
@@ -135,6 +140,7 @@ impl SearchTask {
             let mut current = Current {
                 node: node.clone(),
                 metadata: load_metadata!(&node),
+                parent_was_self: false,
                 chosen_from_simulation: false,
             };
 
@@ -220,10 +226,12 @@ impl SearchTask {
                     }
                 };
 
+                let parent_was_self = current.node.is_self_turn();
                 visited.push(current);
                 current = Current {
                     node: chosen_child.0,
                     metadata: chosen_child.1,
+                    parent_was_self,
                     chosen_from_simulation,
                 };
             };
@@ -231,8 +239,9 @@ impl SearchTask {
             // After search has reached some terminal node with a reward,
             // back-propagate the reward along any fully expanded nodes.
             for Current {
-                node,
+                node: _node,
                 metadata,
+                parent_was_self,
                 chosen_from_simulation,
             } in visited
             {
@@ -241,7 +250,9 @@ impl SearchTask {
                     continue;
                 }
 
-                let self_factor = if node.is_self_turn() { 1 } else { -1 };
+                // The reward is only positive if the action taken was
+                // from the perspective of the self player.
+                let self_factor = if parent_was_self { 1 } else { -1 };
                 metadata.record_result(self_factor * reward);
             }
 
