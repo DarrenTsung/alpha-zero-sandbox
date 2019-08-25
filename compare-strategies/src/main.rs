@@ -3,6 +3,7 @@ use std::fmt;
 use strum_macros::EnumString;
 use game_tree_strategy::{strategies::random::RandomStrategy, Strategy};
 use game_tree::{NodeState, GameTreeNode};
+use std::collections::HashMap;
 
 mod search_tree;
 use self::search_tree::SearchTreeIterationIterator;
@@ -52,6 +53,7 @@ fn main_ty<N: GameTreeNode<Node = N> + 'static>(opt: Opt, root_node: N) {
     for mut s_iterator in strategy_iterators {
         while let Some(strategy) = s_iterator.next() {
             let mut total_reward = 0;
+            let mut reward_counts = HashMap::new();
 
             // Play 1,000 games against random strategy
             for _ in 0..1_000 {
@@ -61,6 +63,7 @@ fn main_ty<N: GameTreeNode<Node = N> + 'static>(opt: Opt, root_node: N) {
                     match current.calculate_state() {
                         NodeState::Reward(reward) => {
                             total_reward += reward;
+                            *reward_counts.entry(reward).or_insert(0) += 1;
                             break;
                         },
                         NodeState::HasChildren(children) => {
@@ -74,7 +77,11 @@ fn main_ty<N: GameTreeNode<Node = N> + 'static>(opt: Opt, root_node: N) {
                 }
             }
 
-            println!("{} - {}", s_iterator, total_reward);
+            let mut reward_counts_strings = reward_counts.into_iter().map(|(reward, count)| {
+                format!("{} - {}", reward, count)
+            }).collect::<Vec<_>>();
+            reward_counts_strings.sort();
+            println!("{} - total={} ({})", s_iterator, total_reward, reward_counts_strings.join(", "));
         }
     }
 }
