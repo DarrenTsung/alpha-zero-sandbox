@@ -33,9 +33,15 @@ impl<N> SearchTreeIterationIterator<N> {
     }
 }
 
-impl<N> fmt::Display for SearchTreeIterationIterator<N> {
+impl<N: GameTreeNode<Node = N> + 'static> fmt::Display for SearchTreeIterationIterator<N> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "MCSearchTree(exploit_f={}, iters={})", self.exploitation_factor, self.current_iteration as u64 * self.step_iterations)
+        write!(
+            f,
+            "MCSearchTree(exploit_f={}, iters={}, fully={})",
+            self.exploitation_factor,
+            self.current_iteration as u64 * self.step_iterations,
+            self.tree.number_of_fully_explored_nodes(self.root.clone())
+        )
     }
 }
 
