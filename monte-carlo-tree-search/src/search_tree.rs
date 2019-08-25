@@ -1,6 +1,5 @@
 use antidote::Mutex;
 use game_tree::{GameTreeNode, NodeState};
-use game_tree_strategy::Strategy;
 use ordered_float::OrderedFloat;
 use rand::seq::{IteratorRandom, SliceRandom};
 use std::collections::hash_map::DefaultHasher;
@@ -69,10 +68,8 @@ impl SearchTree {
         }
         count
     }
-}
 
-impl<N: GameTreeNode> Strategy<N> for SearchTree {
-    fn select_child(&self, children: Vec<N>) -> N {
+    pub fn select_most_visited_child<N: GameTreeNode>(&self, children: Vec<N>) -> N {
         let node_metadata = self.node_metadata.lock();
         children
             .into_iter()

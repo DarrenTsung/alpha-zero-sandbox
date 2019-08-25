@@ -6,4 +6,5 @@ edition = "2018"
 
 [dependencies]
 game-tree = { path = "../game-tree" }
+monte-carlo-tree-search = { path = "../monte-carlo-tree-search" }
 rand = "0.7.0"
