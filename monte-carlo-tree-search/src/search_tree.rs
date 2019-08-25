@@ -128,7 +128,12 @@ impl SearchTask {
                 }
 
                 let mut children = match current.node.calculate_state() {
-                    NodeState::Reward(reward) => break reward,
+                    NodeState::Reward(reward) => {
+                        // Ensure that current node is marked as visited
+                        // before reporting the reward.
+                        visited.push(current);
+                        break reward;
+                    }
                     NodeState::HasChildren(children) => children
                         .into_iter()
                         .map(|c| {
