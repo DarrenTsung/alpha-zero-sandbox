@@ -65,8 +65,8 @@ fn run_games<N: GameTreeNode<Node = N> + 'static, S: fmt::Display + Strategy<N>>
         let mut total_reward = 0;
         let mut reward_counts = HashMap::new();
 
-        // Play 1,000 games against random strategy
-        for _ in 0..1_000 {
+        // Play games against random strategy
+        for _ in 0..100 {
             let mut current = root_node.clone();
 
             loop {
