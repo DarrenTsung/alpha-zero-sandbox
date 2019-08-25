@@ -78,6 +78,10 @@ impl TicTacToeState {
 impl GameTreeNode for TicTacToeState {
     type Node = TicTacToeState;
 
+    fn is_self_turn(&self) -> bool {
+        self.current_player == Player::X
+    }
+
     fn calculate_state(&self) -> NodeState<Self::Node> {
         // Return reward if there is a winner.
         match self.winner() {

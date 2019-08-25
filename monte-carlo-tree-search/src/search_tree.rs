@@ -220,7 +220,7 @@ impl SearchTask {
             // After search has reached some terminal node with a reward,
             // back-propagate the reward along any fully expanded nodes.
             for Current {
-                node: _node,
+                node,
                 metadata,
                 chosen_from_simulation,
             } in visited
@@ -230,7 +230,8 @@ impl SearchTask {
                     continue;
                 }
 
-                metadata.record_result(reward);
+                let self_factor = if node.is_self_turn() { 1 } else { -1 };
+                metadata.record_result(self_factor * reward);
             }
 
             self.number_iterations.fetch_add(1, Ordering::SeqCst);

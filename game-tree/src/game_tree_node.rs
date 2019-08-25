@@ -10,5 +10,6 @@ pub enum NodeState<N> {
 pub trait GameTreeNode: Debug + Hash + Clone + Send + Sync {
     type Node: GameTreeNode;
 
+    fn is_self_turn(&self) -> bool;
     fn calculate_state(&self) -> NodeState<Self::Node>;
 }
