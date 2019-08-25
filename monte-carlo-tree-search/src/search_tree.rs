@@ -169,10 +169,7 @@ impl SearchTask {
                                 .into_iter()
                                 .max_by_key(|(_, meta)| {
                                     OrderedFloat(
-                                        meta.uct(
-                                            &current.metadata,
-                                            self.config.exploitation_factor,
-                                        ),
+                                        meta.uct(&current.metadata, self.config.exploration_factor),
                                     )
                                 })
                                 .expect("array is not empty");

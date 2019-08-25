@@ -12,20 +12,20 @@ pub struct SearchTreeIterationIterator<N> {
     root: N,
 
     step_iterations: u64,
-    exploitation_factor: f64,
+    exploration_factor: f64,
     total_iterations: usize,
 
     current_iteration: usize,
 }
 
 impl<N> SearchTreeIterationIterator<N> {
-    pub fn new(root: N, step_iterations: u64, exploitation_factor: f64, total_iterations: usize) -> Self {
+    pub fn new(root: N, step_iterations: u64, exploration_factor: f64, total_iterations: usize) -> Self {
         Self {
             tree: SearchTree::new(),
             root,
 
             step_iterations,
-            exploitation_factor,
+            exploration_factor,
             total_iterations,
 
             current_iteration: 0,
@@ -37,8 +37,8 @@ impl<N: GameTreeNode<Node = N> + 'static> fmt::Display for SearchTreeIterationIt
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "MCSearchTree(exploit_f={}, iters={}, fully={})",
-            self.exploitation_factor,
+            "MCSearchTree(explore_f={}, iters={}, fully={})",
+            self.exploration_factor,
             self.current_iteration as u64 * self.step_iterations,
             self.tree.number_of_fully_explored_nodes(self.root.clone())
         )
@@ -58,7 +58,7 @@ impl<N: GameTreeNode<Node = N> + 'static> Iterator for SearchTreeIterationIterat
         self.tree.search(self.root.clone(), SearchConfig {
             max_duration: Duration::from_secs(60),
             max_iterations: self.step_iterations,
-            exploitation_factor: self.exploitation_factor,
+            exploration_factor: self.exploration_factor,
         });
 
         Some(Box::new(self.tree.clone()))
