@@ -7,3 +7,14 @@ pub struct SearchConfig {
 
     pub exploitation_factor: f64,
 }
+
+impl Default for SearchConfig {
+    fn default() -> Self {
+        Self {
+            max_duration: Duration::from_secs(1),
+            max_iterations: 1_000,
+
+            exploitation_factor: 0.5,
+        }
+    }
+}
