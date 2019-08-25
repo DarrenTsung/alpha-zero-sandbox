@@ -72,7 +72,7 @@ impl SearchTree {
 }
 
 impl<N: GameTreeNode> Strategy<N> for SearchTree {
-    fn select_child(&mut self, children: Vec<N>) -> N {
+    fn select_child(&self, children: Vec<N>) -> N {
         let node_metadata = self.node_metadata.lock();
         children
             .into_iter()

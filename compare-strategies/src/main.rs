@@ -48,17 +48,15 @@ fn main_ty<N: GameTreeNode<Node = N> + 'static>(opt: Opt, root_node: N) {
         },
     };
 
+    let random_strategy = RandomStrategy;
     for mut s_iterator in strategy_iterators {
         while let Some(strategy) = s_iterator.next() {
             let mut total_reward = 0;
-            let mut strategies = vec![strategy, Box::new(RandomStrategy)];
-            let number_strategies = strategies.len();
 
             // Play 1,000 games against random strategy
             for _ in 0..1_000 {
                 let mut current = root_node.clone();
 
-                let mut index = 0;
                 loop {
                     match current.calculate_state() {
                         NodeState::Reward(reward) => {
@@ -66,9 +64,11 @@ fn main_ty<N: GameTreeNode<Node = N> + 'static>(opt: Opt, root_node: N) {
                             break;
                         },
                         NodeState::HasChildren(children) => {
-                            let child = strategies[index % number_strategies].select_child(children);
-                            index += 1;
-                            current = child;
+                            current = if current.is_self_turn() {
+                                strategy.select_child(children)
+                            } else {
+                                random_strategy.select_child(children)
+                            };
                         },
                     }
                 }
