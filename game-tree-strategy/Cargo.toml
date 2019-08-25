@@ -1,0 +1,9 @@
+[package]
+name = "game-tree-strategy"
+version = "0.1.0"
+authors = ["Darren Tsung <darren.tsung@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+game-tree = { path = "../game-tree" }
+rand = "0.7.0"
