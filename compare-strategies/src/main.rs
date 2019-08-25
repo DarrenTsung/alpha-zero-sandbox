@@ -43,8 +43,8 @@ trait StrategyIterator<N>: fmt::Display + Iterator<Item = Box<dyn Strategy<N>>> 
 fn main_ty<N: GameTreeNode<Node = N> + 'static>(opt: Opt, root_node: N) {
     let strategy_iterators: Vec<Box<dyn StrategyIterator<N>>> = match opt.strategy_to_compare {
         StrategyType::MonteCarloSearchTree => {
-            [0.1, 0.3, 0.5, 0.7, 0.9].iter().map(|exploration_factor| {
-                Box::new(SearchTreeIterationIterator::new(root_node.clone(), 100, *exploration_factor, 30)) as Box<dyn StrategyIterator<N>>
+            [1.4142].iter().map(|exploration_factor| {
+                Box::new(SearchTreeIterationIterator::new(root_node.clone(), 10_000, *exploration_factor, 30)) as Box<dyn StrategyIterator<N>>
             }).collect::<Vec<_>>()
         },
     };
