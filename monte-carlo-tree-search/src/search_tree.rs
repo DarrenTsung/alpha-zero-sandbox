@@ -55,6 +55,7 @@ impl SearchTask {
         let start = Instant::now();
         let mut rand = rand::thread_rng();
 
+        let mut number_iterations = 0;
         let mut local_node_metadata = HashMap::new();
         macro_rules! load_metadata {
             ($node:expr) => {
@@ -70,6 +71,10 @@ impl SearchTask {
         }
 
         'run: loop {
+            if number_iterations > self.config.max_iterations {
+                break 'run;
+            }
+
             let mut visited = vec![];
             let mut current = (node.clone(), load_metadata!(&node));
 
@@ -142,6 +147,8 @@ impl SearchTask {
 
                 metadata.record_result(reward);
             }
+
+            number_iterations += 1;
         }
     }
 
