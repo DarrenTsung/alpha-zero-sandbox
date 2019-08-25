@@ -201,7 +201,7 @@ mod tests {
             current_player: Player::O,
         };
 
-        let children = match initial_state.calculate_state() {
+        match initial_state.calculate_state() {
             NodeState::Reward(reward) => assert_eq!(reward, 1, "player x gives 1 reward"),
             s => panic!("expected NodeState::Reward, got {:?}", s),
         };
@@ -221,7 +221,7 @@ mod tests {
             current_player: Player::O,
         };
 
-        let children = match initial_state.calculate_state() {
+        match initial_state.calculate_state() {
             NodeState::Reward(reward) => assert_eq!(reward, 0, "ties give 0 reward"),
             s => panic!("expected NodeState::Reward, got {:?}", s),
         };
