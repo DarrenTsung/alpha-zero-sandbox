@@ -31,15 +31,19 @@ impl SearchTree {
     /// with the given search configuration.
     pub fn search<N: GameTreeNode<Node = N> + 'static>(&self, node: N, config: SearchConfig) {
         let number_iterations = Arc::new(AtomicU64::new(0));
-        let _ = (0..num_cpus::get()).into_par_iter().map(|_| {
-            let node = node.clone();
-            let task = SearchTask {
-                tree: self.clone(),
-                number_iterations: Arc::clone(&number_iterations),
-                config: config.clone(),
-            };
-            task.run(node);
-        });
+        let _: () = (0..num_cpus::get())
+            .into_par_iter()
+            .map(|_| {
+                let node = node.clone();
+                let task = SearchTask {
+                    tree: self.clone(),
+                    number_iterations: Arc::clone(&number_iterations),
+                    config: config.clone(),
+                };
+                task.run(node);
+                ()
+            })
+            .collect();
     }
 
     pub fn number_of_fully_expanded_nodes<N: GameTreeNode<Node = N> + 'static>(
