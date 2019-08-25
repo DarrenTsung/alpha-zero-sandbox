@@ -2,12 +2,12 @@ use antidote::Mutex;
 use game_tree::{GameTreeNode, NodeState};
 use ordered_float::OrderedFloat;
 use rand::seq::{IteratorRandom, SliceRandom};
+use rayon::prelude::*;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::Hasher;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::thread;
 use std::time::Instant;
 
 use crate::node_metadata::NodeMetadata;
@@ -31,20 +31,15 @@ impl SearchTree {
     /// with the given search configuration.
     pub fn search<N: GameTreeNode<Node = N> + 'static>(&self, node: N, config: SearchConfig) {
         let number_iterations = Arc::new(AtomicU64::new(0));
-        let mut handles = vec![];
-        for _ in 0..num_cpus::get() {
+        let _ = (0..num_cpus::get()).into_par_iter().map(|_| {
             let node = node.clone();
             let task = SearchTask {
                 tree: self.clone(),
                 number_iterations: Arc::clone(&number_iterations),
                 config: config.clone(),
             };
-            handles.push(thread::spawn(|| task.run(node)));
-        }
-
-        for h in handles {
-            h.join().expect("no panics");
-        }
+            task.run(node);
+        });
     }
 
     pub fn number_of_fully_explored_nodes<N: GameTreeNode<Node = N> + 'static>(
