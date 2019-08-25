@@ -43,7 +43,7 @@ fn main() {
 fn main_ty<N: GameTreeNode<Node = N> + 'static>(opt: Opt, root_node: N) {
     match opt.strategy_to_compare {
         StrategyType::MonteCarloSearchTree => {
-            let iterations_per_search = 10_000;
+            let iterations_per_search = 1_000;
             let exploration_factor = 2.0_f64.sqrt();
             let strategies = vec![LearningSearchTreeStrategy::new(
                 root_node.clone(),
