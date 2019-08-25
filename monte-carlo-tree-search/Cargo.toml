@@ -1,0 +1,12 @@
+[package]
+name = "monte-carlo-tree-search"
+version = "0.1.0"
+authors = ["Darren Tsung <darren.tsung@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+game-tree = { path = "../game-tree" }
+antidote = "1.0.0"
+num_cpus = "1.10.1"
+rand = "0.7.0"
+ordered-float = "1.0.2"

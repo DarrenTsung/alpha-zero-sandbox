@@ -1,7 +1,13 @@
 use std::hash::Hash;
 
-pub trait GameTreeNode: Hash + Clone + Send + Sync {
-    type Node;
+#[derive(Debug)]
+pub enum NodeState<N> {
+    HasChildren(Vec<N>),
+    Reward(i64),
+}
 
-    fn children(&self) -> Vec<Self::Node>;
+pub trait GameTreeNode: Hash + Clone + Send + Sync {
+    type Node: GameTreeNode;
+
+    fn calculate_state(&self) -> NodeState<Self::Node>;
 }

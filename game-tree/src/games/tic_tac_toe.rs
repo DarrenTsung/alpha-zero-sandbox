@@ -1,4 +1,4 @@
-use crate::GameTreeNode;
+use crate::{GameTreeNode, NodeState};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Player {
@@ -71,10 +71,12 @@ impl TicTacToeState {
 impl GameTreeNode for TicTacToeState {
     type Node = TicTacToeState;
 
-    fn children(&self) -> Vec<Self::Node> {
-        // No possible child states if there is a winner.
-        if self.winner().is_some() {
-            return vec![];
+    fn calculate_state(&self) -> NodeState<Self::Node> {
+        // Return reward if there is a winner.
+        match self.winner() {
+            Some(Player::X) => return NodeState::Reward(1),
+            Some(Player::O) => return NodeState::Reward(-1),
+            _ => (),
         }
 
         let mut child_nodes = vec![];
@@ -93,7 +95,12 @@ impl GameTreeNode for TicTacToeState {
             });
         }
 
-        child_nodes
+        // If no possible moves and no winners, than it is a tie.
+        if child_nodes.is_empty() {
+            NodeState::Reward(0)
+        } else {
+            NodeState::HasChildren(child_nodes)
+        }
     }
 }
 
@@ -129,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn children_works_as_expected_for_tictactoe_state() {
+    fn state_has_children_works() {
         #[rustfmt::skip]
         let initial_board = board(
             " XX",
@@ -142,7 +149,10 @@ mod tests {
             current_player: Player::X,
         };
 
-        let children = initial_state.children();
+        let children = match initial_state.calculate_state() {
+            NodeState::HasChildren(children) => children,
+            s => panic!("expected NodeState::HasChildren, got: {:?}", s),
+        };
         assert_eq!(children.len(), 2, "expected 2 possible new states");
 
         #[rustfmt::skip]
@@ -171,7 +181,7 @@ mod tests {
     }
 
     #[test]
-    fn no_children_from_finished_tictactoe_game() {
+    fn get_reward_from_finished_tictactoe_game() {
         #[rustfmt::skip]
         let initial_board = board(
             " XX",
@@ -184,7 +194,29 @@ mod tests {
             current_player: Player::O,
         };
 
-        let children = initial_state.children();
-        assert_eq!(children.len(), 0, "expected no child states");
+        let children = match initial_state.calculate_state() {
+            NodeState::Reward(reward) => assert_eq!(reward, 1, "player x gives 1 reward"),
+            s => panic!("expected NodeState::Reward, got {:?}", s),
+        };
+    }
+
+    #[test]
+    fn get_no_reward_from_tied_tictactoe_game() {
+        #[rustfmt::skip]
+        let initial_board = board(
+            "OOX",
+            "XXO",
+            "OXO"
+        );
+
+        let initial_state = TicTacToeState {
+            board: initial_board,
+            current_player: Player::O,
+        };
+
+        let children = match initial_state.calculate_state() {
+            NodeState::Reward(reward) => assert_eq!(reward, 0, "ties give 0 reward"),
+            s => panic!("expected NodeState::Reward, got {:?}", s),
+        };
     }
 }
