@@ -1,5 +1,6 @@
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU32, Ordering};
 
+#[derive(Debug)]
 pub struct NodeMetadata {
     total_reward: AtomicI64,
     number_of_visits: AtomicU32,

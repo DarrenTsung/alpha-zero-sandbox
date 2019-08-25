@@ -3,4 +3,5 @@ members = [
   "game-tree",
   "monte-carlo-tree-search",
   "game-tree-strategy",
+  "compare-strategies",
 ]

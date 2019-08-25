@@ -1,7 +1,7 @@
 use crate::{GameTreeNode, NodeState};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum Player {
+enum Player {
     X = 0,
     O = 1,
 }
@@ -26,6 +26,13 @@ pub struct TicTacToeState {
 }
 
 impl TicTacToeState {
+    pub fn new() -> Self {
+        TicTacToeState {
+            board: [None; 9],
+            current_player: Player::X,
+        }
+    }
+
     const WIN_INDICES: [[usize; 3]; 8] = [
         // Rows
         [0, 1, 2],

@@ -1,0 +1,14 @@
+[package]
+name = "compare-strategies"
+version = "0.1.0"
+authors = ["Darren Tsung <darren.tsung@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+monte-carlo-tree-search = { path = "../monte-carlo-tree-search" }
+game-tree = { path = "../game-tree" }
+game-tree-strategy = { path = "../game-tree-strategy" }
+
+structopt = "0.2.18"
+strum = "0.15.0"
+strum_macros = "0.15.0"

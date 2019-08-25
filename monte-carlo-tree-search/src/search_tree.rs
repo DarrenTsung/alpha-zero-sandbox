@@ -2,10 +2,11 @@ use antidote::Mutex;
 use game_tree::{GameTreeNode, NodeState};
 use game_tree_strategy::Strategy;
 use ordered_float::OrderedFloat;
-use rand::seq::IteratorRandom;
+use rand::seq::{IteratorRandom, SliceRandom};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::Hasher;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
@@ -30,11 +31,13 @@ impl SearchTree {
     /// Explore more of the SearchTree from the node provided
     /// with the given search configuration.
     pub fn search<N: GameTreeNode<Node = N> + 'static>(&self, node: N, config: SearchConfig) {
+        let number_iterations = Arc::new(AtomicU64::new(0));
         let mut handles = vec![];
         for _ in 0..num_cpus::get() {
             let node = node.clone();
             let task = SearchTask {
                 tree: self.clone(),
+                number_iterations: Arc::clone(&number_iterations),
                 config: config.clone(),
             };
             handles.push(thread::spawn(|| task.run(node)));
@@ -63,6 +66,7 @@ impl<N: GameTreeNode> Strategy<N> for SearchTree {
 
 struct SearchTask {
     tree: SearchTree,
+    number_iterations: Arc<AtomicU64>,
     config: SearchConfig,
 }
 
@@ -71,7 +75,6 @@ impl SearchTask {
         let start = Instant::now();
         let mut rand = rand::thread_rng();
 
-        let mut number_iterations = 0;
         let mut local_node_metadata = HashMap::new();
         macro_rules! load_metadata {
             ($node:expr) => {
@@ -79,7 +82,7 @@ impl SearchTask {
             };
         }
 
-        #[derive(PartialEq)]
+        #[derive(Debug, PartialEq)]
         enum State {
             NodesFullyExpanded,
             SelectSimulation,
@@ -87,7 +90,7 @@ impl SearchTask {
         }
 
         'run: loop {
-            if number_iterations > self.config.max_iterations {
+            if self.number_iterations.load(Ordering::SeqCst) > self.config.max_iterations {
                 break 'run;
             }
 
@@ -100,7 +103,7 @@ impl SearchTask {
                     break 'run;
                 }
 
-                let children = match current.0.calculate_state() {
+                let mut children = match current.0.calculate_state() {
                     NodeState::Reward(reward) => break reward,
                     NodeState::HasChildren(children) => children
                         .into_iter()
@@ -117,17 +120,16 @@ impl SearchTask {
                     match state {
                         State::NodesFullyExpanded => {
                             if !current.1.is_fully_expanded() {
-                                state = State::SelectSimulation;
-                                continue;
-                            }
-
-                            let all_children_visited =
-                                children.iter().all(|(_, meta)| meta.is_visited());
-                            if all_children_visited {
-                                current.1.set_fully_expanded();
-                            } else {
-                                state = State::SelectSimulation;
-                                continue;
+                                // If cached check fails, ensure that it is
+                                // truly not fully expanded.
+                                let all_children_visited =
+                                    children.iter().all(|(_, meta)| meta.is_visited());
+                                if all_children_visited {
+                                    current.1.set_fully_expanded();
+                                } else {
+                                    state = State::SelectSimulation;
+                                    continue;
+                                }
                             }
 
                             break children
@@ -139,7 +141,27 @@ impl SearchTask {
                                 })
                                 .expect("array is not empty");
                         }
-                        State::SelectSimulation => {}
+                        State::SelectSimulation => {
+                            let non_visited_indices = children
+                                .iter()
+                                .enumerate()
+                                .filter_map(|(i, (_, meta))| {
+                                    if meta.is_visited() {
+                                        return None;
+                                    }
+
+                                    Some(i)
+                                })
+                                .collect::<Vec<_>>();
+
+                            if non_visited_indices.is_empty() {
+                                state = State::NodesFullyExpanded;
+                                continue;
+                            }
+
+                            let index = non_visited_indices.choose(&mut rand).expect("not empty");
+                            break children.remove(*index);
+                        }
                         State::InSimulation => {
                             break children
                                 .into_iter()
@@ -164,7 +186,7 @@ impl SearchTask {
                 metadata.record_result(reward);
             }
 
-            number_iterations += 1;
+            self.number_iterations.fetch_add(1, Ordering::SeqCst);
         }
     }
 

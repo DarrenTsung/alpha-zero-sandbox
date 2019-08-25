@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::hash::Hash;
 
 #[derive(Debug)]
@@ -6,7 +7,7 @@ pub enum NodeState<N> {
     Reward(i64),
 }
 
-pub trait GameTreeNode: Hash + Clone + Send + Sync {
+pub trait GameTreeNode: Debug + Hash + Clone + Send + Sync {
     type Node: GameTreeNode;
 
     fn calculate_state(&self) -> NodeState<Self::Node>;
