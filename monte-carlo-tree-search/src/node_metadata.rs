@@ -40,7 +40,7 @@ impl NodeMetadata {
 
         let exploitation_component = total_reward / number_of_visits;
         let exploration_component =
-            exploration_factor * (number_of_visits.log10() / parent_number_of_visits).sqrt();
+            exploration_factor * (number_of_visits.log2() / parent_number_of_visits).sqrt();
 
         exploitation_component + exploration_component
     }
