@@ -104,10 +104,10 @@ impl SearchTask {
             };
         }
 
-        #[derive(Debug, PartialEq)]
+        #[derive(Debug, PartialEq, Clone, Copy)]
         enum State {
             NodesFullyExpanded,
-            SelectSimulation,
+            ChooseSimulationStart,
             InSimulation,
         }
 
@@ -116,8 +116,18 @@ impl SearchTask {
                 break 'run;
             }
 
+            struct Current<N> {
+                node: N,
+                metadata: Arc<NodeMetadata>,
+                chosen_from_simulation: bool,
+            }
+
             let mut visited = vec![];
-            let mut current = (node.clone(), load_metadata!(&node));
+            let mut current = Current {
+                node: node.clone(),
+                metadata: load_metadata!(&node),
+                chosen_from_simulation: false,
+            };
 
             let mut state = State::NodesFullyExpanded;
             let reward = loop {
@@ -125,7 +135,7 @@ impl SearchTask {
                     break 'run;
                 }
 
-                let mut children = match current.0.calculate_state() {
+                let mut children = match current.node.calculate_state() {
                     NodeState::Reward(reward) => break reward,
                     NodeState::HasChildren(children) => children
                         .into_iter()
@@ -138,18 +148,19 @@ impl SearchTask {
 
                 debug_assert!(!children.is_empty());
 
+                let mut chosen_from_simulation = false;
                 let chosen_child = loop {
                     match state {
                         State::NodesFullyExpanded => {
-                            if !current.1.is_fully_expanded() {
+                            if !current.metadata.is_fully_expanded() {
                                 // If cached check fails, ensure that it is
                                 // truly not fully expanded.
                                 let all_children_visited =
                                     children.iter().all(|(_, meta)| meta.is_visited());
                                 if all_children_visited {
-                                    current.1.set_fully_expanded();
+                                    current.metadata.set_fully_expanded();
                                 } else {
-                                    state = State::SelectSimulation;
+                                    state = State::ChooseSimulationStart;
                                     continue;
                                 }
                             }
@@ -158,12 +169,15 @@ impl SearchTask {
                                 .into_iter()
                                 .max_by_key(|(_, meta)| {
                                     OrderedFloat(
-                                        meta.uct(&current.1, self.config.exploitation_factor),
+                                        meta.uct(
+                                            &current.metadata,
+                                            self.config.exploitation_factor,
+                                        ),
                                     )
                                 })
                                 .expect("array is not empty");
                         }
-                        State::SelectSimulation => {
+                        State::ChooseSimulationStart => {
                             let non_visited_indices = children
                                 .iter()
                                 .enumerate()
@@ -182,9 +196,11 @@ impl SearchTask {
                             }
 
                             let index = non_visited_indices.choose(&mut rand).expect("not empty");
+                            state = State::InSimulation;
                             break children.remove(*index);
                         }
                         State::InSimulation => {
+                            chosen_from_simulation = true;
                             break children
                                 .into_iter()
                                 .choose(&mut rand)
@@ -193,15 +209,24 @@ impl SearchTask {
                     }
                 };
 
-                visited.push((current, state == State::InSimulation));
-                current = chosen_child;
+                visited.push(current);
+                current = Current {
+                    node: chosen_child.0,
+                    metadata: chosen_child.1,
+                    chosen_from_simulation,
+                };
             };
 
             // After search has reached some terminal node with a reward,
             // back-propagate the reward along any fully expanded nodes.
-            for ((_node, metadata), in_simulation) in visited {
+            for Current {
+                node: _node,
+                metadata,
+                chosen_from_simulation,
+            } in visited
+            {
                 // Don't record nodes where were reached through simulation.
-                if in_simulation {
+                if chosen_from_simulation {
                     continue;
                 }
 
