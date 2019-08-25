@@ -38,6 +38,8 @@ impl NodeMetadata {
         let number_of_visits = self.number_of_visits() as f64;
         let total_reward = self.total_reward.load(Ordering::SeqCst) as f64;
 
+        debug_assert!(number_of_visits != 0.0);
+
         let exploitation_component = total_reward / number_of_visits;
         let exploration_component =
             exploration_factor * (parent_number_of_visits.log2() / number_of_visits).sqrt();
