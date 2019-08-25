@@ -26,7 +26,7 @@ impl NodeMetadata {
         self.visited.store(true, Ordering::SeqCst);
     }
 
-    fn number_of_visits(&self) -> u32 {
+    pub fn number_of_visits(&self) -> u32 {
         self.number_of_visits.load(Ordering::SeqCst)
     }
 

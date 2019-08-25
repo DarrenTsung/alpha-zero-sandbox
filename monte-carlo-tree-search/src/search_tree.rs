@@ -1,5 +1,6 @@
 use antidote::Mutex;
 use game_tree::{GameTreeNode, NodeState};
+use game_tree_strategy::Strategy;
 use ordered_float::OrderedFloat;
 use rand::seq::IteratorRandom;
 use std::collections::hash_map::DefaultHasher;
@@ -42,6 +43,21 @@ impl SearchTree {
         for h in handles {
             h.join().expect("no panics");
         }
+    }
+}
+
+impl<N: GameTreeNode> Strategy<N> for SearchTree {
+    fn select_child(&mut self, children: Vec<N>) -> N {
+        let node_metadata = self.node_metadata.lock();
+        children
+            .into_iter()
+            .max_by_key(|c| {
+                node_metadata
+                    .get(&hash(c))
+                    .map(|meta| meta.number_of_visits())
+                    .unwrap_or(0)
+            })
+            .expect("array is not empty")
     }
 }
 
@@ -157,7 +173,7 @@ impl SearchTask {
         local: &mut MetadataMap,
         synchronized: &Arc<Mutex<MetadataMap>>,
     ) -> Arc<NodeMetadata> {
-        let hash = Self::hash(node);
+        let hash = hash(node);
         if let Some(metadata) = local.get(&hash) {
             return Arc::clone(&metadata);
         }
@@ -170,10 +186,10 @@ impl SearchTask {
         local.insert(hash, Arc::clone(&metadata));
         metadata
     }
+}
 
-    fn hash(node: &impl GameTreeNode) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        node.hash(&mut hasher);
-        hasher.finish()
-    }
+fn hash(node: &impl GameTreeNode) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    node.hash(&mut hasher);
+    hasher.finish()
 }

@@ -5,8 +5,8 @@ use crate::Strategy;
 
 pub struct RandomStrategy;
 
-impl<N: GameTreeNode<Node = N>> Strategy<N> for RandomStrategy {
-    fn select_child(children: Vec<N>) -> N {
+impl<N: GameTreeNode> Strategy<N> for RandomStrategy {
+    fn select_child(&mut self, children: Vec<N>) -> N {
         children
             .into_iter()
             .choose(&mut rand::thread_rng())

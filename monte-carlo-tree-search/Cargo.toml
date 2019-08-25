@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 game-tree = { path = "../game-tree" }
+game-tree-strategy = { path = "../game-tree-strategy" }
 antidote = "1.0.0"
 num_cpus = "1.10.1"
 rand = "0.7.0"
