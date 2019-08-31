@@ -1,10 +1,9 @@
-use antidote::Mutex;
+use ccl::dhashmap::DHashMap;
 use game_tree::{GameTreeNode, NodeState};
 use ordered_float::OrderedFloat;
 use rand::seq::{IteratorRandom, SliceRandom};
 use rayon::prelude::*;
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashMap;
 use std::hash::Hasher;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -13,17 +12,17 @@ use std::time::Instant;
 use crate::node_metadata::NodeMetadata;
 use crate::SearchConfig;
 
-type MetadataMap = HashMap<u64, Arc<NodeMetadata>>;
+type MetadataMap = DHashMap<u64, Arc<NodeMetadata>>;
 
 #[derive(Clone)]
 pub struct SearchTree {
-    node_metadata: Arc<Mutex<MetadataMap>>,
+    node_metadata: Arc<MetadataMap>,
 }
 
 impl SearchTree {
     pub fn new() -> Self {
         Self {
-            node_metadata: Arc::new(Mutex::new(HashMap::new())),
+            node_metadata: Arc::new(DHashMap::default()),
         }
     }
 
@@ -55,7 +54,6 @@ impl SearchTree {
         while let Some(node) = queue.pop() {
             let is_fully_expanded = self
                 .node_metadata
-                .lock()
                 .get(&hash(&node))
                 .map(|meta| meta.is_fully_expanded())
                 .unwrap_or(false);
@@ -72,23 +70,15 @@ impl SearchTree {
     }
 
     pub fn select_most_visited_child<N: GameTreeNode>(&self, children: Vec<N>) -> (u32, N) {
-        let node_metadata = self.node_metadata.lock();
         children
             .into_iter()
-            .map(|c| (Self::get_number_of_visits_helper(&node_metadata, &c), c))
+            .map(|c| (self.get_number_of_visits(&c), c))
             .max_by_key(|(number_of_visits, _c)| *number_of_visits)
             .expect("array is not empty")
     }
 
     pub fn get_number_of_visits<N: GameTreeNode>(&self, node: &N) -> u32 {
-        Self::get_number_of_visits_helper(&self.node_metadata.lock(), node)
-    }
-
-    fn get_number_of_visits_helper<N: GameTreeNode>(
-        node_metadata: &antidote::MutexGuard<MetadataMap>,
-        node: &N,
-    ) -> u32 {
-        node_metadata
+        self.node_metadata
             .get(&hash(node))
             .map(|meta| meta.number_of_visits())
             .unwrap_or(0)
@@ -106,10 +96,9 @@ impl SearchTask {
         let start = Instant::now();
         let mut rand = rand::thread_rng();
 
-        let mut local_node_metadata = HashMap::new();
         macro_rules! load_metadata {
             ($node:expr) => {
-                Self::load_metadata($node, &mut local_node_metadata, &self.tree.node_metadata)
+                Self::load_metadata($node, &self.tree.node_metadata)
             };
         }
 
@@ -260,23 +249,10 @@ impl SearchTask {
         }
     }
 
-    fn load_metadata(
-        node: &impl GameTreeNode,
-        local: &mut MetadataMap,
-        synchronized: &Arc<Mutex<MetadataMap>>,
-    ) -> Arc<NodeMetadata> {
+    fn load_metadata(node: &impl GameTreeNode, map: &MetadataMap) -> Arc<NodeMetadata> {
         let hash = hash(node);
-        if let Some(metadata) = local.get(&hash) {
-            return Arc::clone(&metadata);
-        }
-
-        let metadata = synchronized
-            .lock()
-            .entry(hash)
-            .or_insert_with(|| Arc::new(NodeMetadata::new()))
-            .clone();
-        local.insert(hash, Arc::clone(&metadata));
-        metadata
+        map.get_or_insert_with(&hash, || Arc::new(NodeMetadata::new()))
+            .clone()
     }
 }
 
