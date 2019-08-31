@@ -12,6 +12,7 @@ rand = "0.7.0"
 ordered-float = "1.0.2"
 rayon = "1.1.0"
 ccl = "4.13.3"
+lru = "0.1.17"
 
 [dev-dependencies]
 criterion = "0.3"

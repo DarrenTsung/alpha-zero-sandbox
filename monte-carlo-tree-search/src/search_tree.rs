@@ -3,6 +3,7 @@ use game_tree::{GameTreeNode, NodeState};
 use ordered_float::OrderedFloat;
 use rand::seq::{IteratorRandom, SliceRandom};
 use rayon::prelude::*;
+use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -96,6 +97,7 @@ impl SearchTask {
         let start = Instant::now();
         let mut rand = rand::thread_rng();
 
+        let mut state_cache = lru::LruCache::new(100_000);
         macro_rules! load_metadata {
             ($node:expr) => {
                 Self::load_metadata($node, &self.tree.node_metadata)
@@ -139,17 +141,28 @@ impl SearchTask {
                     break 'run;
                 }
 
-                let mut children = match current.node.calculate_state() {
+                let current_node_hash = hash(&current.node);
+                let node_state: Cow<NodeState<N>> =
+                    if let Some(node_state) = state_cache.get(&current_node_hash) {
+                        Cow::Borrowed(node_state)
+                    } else {
+                        let state = current.node.calculate_state();
+                        state_cache.put(current_node_hash, state);
+                        Cow::Borrowed(state_cache.get(&current_node_hash).expect("exists"))
+                    };
+
+                use std::borrow::Borrow;
+                let mut children = match node_state.borrow() {
                     NodeState::Reward(reward) => {
                         // Ensure that current node is marked as visited
                         // before reporting the reward.
                         visited.push(current);
-                        break reward;
+                        break *reward;
                     }
                     NodeState::HasChildren(children) => children
-                        .into_iter()
+                        .iter()
                         .map(|c| {
-                            let metadata = load_metadata!(&c);
+                            let metadata = load_metadata!(c);
                             (c, metadata)
                         })
                         .collect::<Vec<_>>(),
@@ -218,7 +231,7 @@ impl SearchTask {
                 let parent_was_self = current.node.is_self_turn();
                 visited.push(current);
                 current = Current {
-                    node: chosen_child.0,
+                    node: chosen_child.0.clone(),
                     metadata: chosen_child.1,
                     parent_was_self,
                     chosen_from_simulation,

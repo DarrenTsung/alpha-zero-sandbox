@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NodeState<N> {
     HasChildren(Vec<N>),
     Reward(i64),
